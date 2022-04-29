@@ -1,93 +1,144 @@
 import React, { useEffect, useState } from "react";
-import TodoItem from "./TodoItem";
 
-const Form = () => {
-  const [task, setTask] = useState({
-    label: "",
-    done: false,
-  });
-  const [list, setList] = useState([]);
+//create your first component
+const Home = props => {
+	const [tasks, setTasks] = useState([]);
+	const url = "https://assets.breatheco.de/apis/fake/todos/user/thenoa96";
 
-  const handleChange = (event) => {
-    setTask({
-      label: event.target.value,
-      done: false,
-    });
-  };
+	const Enter = e => {
+		if (e.key === "Enter" && e.target.value !== "") {
+			tasks.push({ label: e.target.value, done: false });
+			setTasks([...tasks]);
+			tasks.length == 1 ? createUser() : updateTask();
+			e.target.value = "";
+		}
+	};
 
-  const getTodos = () => {
-    fetch("https://assets.breatheco.de/apis/fake/todos/user/thenoa96", {
-      method: "GET",
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("this is data", data);
-        setList(data);
-      });
-  };
+	useEffect(() => {
+		getTasks();
+	}, []);
+	const getTasks = () => {
+		fetch(url, {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json"
+			}
+		})
+			.then(response => {
+				return response.json();
+			})
+			.then(data => {
+				if (Array.isArray(data)) {
+					setTasks(data);
+				}
+			})
+			.catch(error => {
+				console.log(error);
+			});
+	};
 
-  const createTodos = (todoList) => {
-    fetch("https://assets.breatheco.de/apis/fake/todos/user/thenoa96", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(todoList),
-    });
-  };
+	const createUser = () => {
+		fetch(url, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify(tasks)
+		})
+			.then(response => response.json())
+			.then(data => {
+				updateTask();
+			})
+			.catch(error => console.log(error));
+	};
 
-  useEffect(() => {
-    getTodos();
-  }, []);
+	const updateTask = () => {
+		fetch(url, {
+			method: "PUT",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify(tasks)
+		})
+			.then(response => response.json())
+			.then(data => {
+				console.log(data);
+			})
+			.catch(error => console.log(error));
+	};
 
-  const onSubmit = (event) => {
-    event.preventDefault();
-    setList([...list, task]);
-    createTodos([...list, task]);
-    setTask({
-      label: "",
-      done: false,
-    });
-  };
+	const deleteTasks = () => {
+		fetch(url, {
+			method: "DELETE",
+			headers: {
+				"Content-Type": "application/json"
+			}
+		})
+			.then(response => response.json())
+			.then(data => {})
+			.catch(error => console.log(error));
+	};
 
-  const onDelete = (item) => {
-    const filteredTodoList = list.filter((todoItem) => {
-      return todoItem.label !== item.label;
-    });
-
-    setList(filteredTodoList);
-  };
-
-  const deleteAll = () => {
-    fetch("https://assets.breatheco.de/apis/fake/todos/user/thenoa96", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify([{}]),
-    });
-    setList([]);
-  };
-
-  return (
-    <div className="form">
-      <h1 style={{ color: "pink", fontSize: 100, margin: 0 }}>todos</h1>
-      <form onSubmit={onSubmit}>
-        <input
-          type="text"
-          placeholder="what needs to be done?"
-          value={task.label}
-          onChange={handleChange}
-        />
-      </form>
-      <button onClick={deleteAll}>delete all</button>
-      <ul>
-        {list.map((item, index) => {
-          return <TodoItem todoItem={item} deleteTodo={onDelete} key={index} />;
-        })}
-      </ul>
-    </div>
-  );
+	return (
+		<div className="titulo">
+			<h1 style={{ color: "pink", fontSize: 100, margin: 0 }}>todos</h1>
+			<div className="container d-flex justify-content-center text-align-center">
+				<div>
+					<input
+						className="input1"
+						placeholder=" ¿What needs to be done?"
+						onKeyUp={e => Enter(e)}
+					/>
+					<ul>
+						{tasks.length === 0 ? (
+							<li className="tareas notask">
+								No task, add a task
+							</li>
+						) : (
+							tasks.map((t, index) => {
+								return (
+									<div key={index}>
+										<li className="tareas">
+											<p>{t.label}</p>
+											<button
+												className="boton"
+												onClick={() => {
+													tasks.splice(index, 1);
+													setTasks([...tasks]);
+													console.log(tasks.length);
+													tasks.length === 0
+														? deleteTasks()
+														: updateTask();
+												}}>
+												<i className="fas fa-times"></i>
+											</button>
+										</li>
+									</div>
+								);
+							})
+						)}
+						{tasks.length > 0 ? (
+							<li className="contadordetareas">
+								{tasks.length > 1
+									? `${tasks.length} items left`
+									: `${tasks.length} item left`}
+							</li>
+						) : (
+							""
+						)}
+					</ul>
+				</div>
+			</div>
+			<button
+				className="btn btn-danger"
+				onClick={() => {
+					setTasks([]);
+					deleteTasks();
+				}}>
+				Erase Tasks
+			</button>
+		</div>
+	);
 };
 
-export default Form;
+export default Home;
